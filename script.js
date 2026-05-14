@@ -104,6 +104,13 @@ function saveUserToMasterList(name, contact) {
       date: new Date().toLocaleString()
     });
     localStorage.setItem(KEY_ALL_USERS, JSON.stringify(users));
+
+    // ALSO SAVE TO SERVER
+    fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, contact })
+    }).catch(err => console.error('Server save failed', err));
   }
 }
 
@@ -252,7 +259,6 @@ function showAdminDashboard() {
     logs  = JSON.parse(localStorage.getItem(KEY_ALL_LOGS))  || [];
   } catch (e) { }
 
-  document.getElementById('admin-total-joined').textContent = users.length;
   document.getElementById('admin-total-players').textContent = logs.length;
 
   // Table
@@ -267,6 +273,25 @@ function showAdminDashboard() {
     `;
     body.appendChild(row);
   });
+
+  // SYNC FROM SERVER (OVERWRITE LOCAL DISPLAY WITH TRUTH)
+  fetch('/api/admin/data')
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('admin-total-joined').textContent = data.users.length;
+      document.getElementById('admin-total-players').textContent = data.logs.length;
+      
+      body.innerHTML = '';
+      [...data.users].reverse().forEach(u => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td style="padding: 0.75rem; border-bottom: 1px solid var(--glass-border);">${u.name}</td>
+          <td style="padding: 0.75rem; border-bottom: 1px solid var(--glass-border);">${u.contact}</td>
+          <td style="padding: 0.75rem; border-bottom: 1px solid var(--glass-border); color: var(--text-muted);">${u.date}</td>
+        `;
+        body.appendChild(row);
+      });
+    }).catch(e => console.warn('Server sync failed, using local data.'));
 
   document.getElementById('admin-overlay').style.display = 'flex';
 }

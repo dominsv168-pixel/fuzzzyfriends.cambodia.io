@@ -170,6 +170,17 @@ function logEntry(user, prize) {
     });
 
     localStorage.setItem(KEY_ALL_LOGS, JSON.stringify(logs));
+
+    // ALSO SAVE TO SERVER
+    fetch('/api/spin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            name: user ? user.name : 'Unknown', 
+            contact: user ? user.contact : 'Unknown', 
+            prize: prize.label.replace('\n', ' ') 
+        })
+    }).catch(err => console.error('Server log failed', err));
 }
 
 /** Export all logs as CSV. */
@@ -300,6 +311,37 @@ function showAdminDashboard() {
         `;
         logsBody.appendChild(row);
     });
+
+    // SYNC FROM SERVER (OVERWRITE LOCAL DISPLAY WITH TRUTH)
+    fetch('/api/admin/data')
+        .then(r => r.json())
+        .then(data => {
+            if (playersEl) playersEl.textContent = data.logs.length;
+            if (joinedEl) joinedEl.textContent = data.users.length;
+
+            // Update Users Table
+            if (usersBody) {
+                usersBody.innerHTML = '';
+                [...data.users].reverse().forEach(u => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${u.name}</td><td>${u.contact}</td><td style="color: var(--text-sub)">${u.date}</td>`;
+                    usersBody.appendChild(row);
+                });
+            }
+
+            // Update Logs Table
+            logsBody.innerHTML = '';
+            [...data.logs].reverse().forEach(log => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${log.name}</td>
+                    <td>${log.contact}</td>
+                    <td class="prize-tag">${log.prize}</td>
+                    <td style="color: var(--text-sub)">${log.date.split(',')[1] || log.date}</td>
+                `;
+                logsBody.appendChild(row);
+            });
+        }).catch(e => console.warn('Server sync failed.'));
 
     overlay.style.display = 'flex';
 }

@@ -10,6 +10,7 @@ A premium, interactive web-based "Lucky Spin" game designed for booth events and
 - **Stock Awareness**: Visual "Sold Out" indicators on the wheel segments when daily prize limits are reached.
 
 ### 🔐 Administrative Dashboard
+- **Server-Side Persistence**: Data is now automatically saved to `data/users.json` and `data/logs.json` on the server, ensuring records are never lost even if the browser cache is cleared.
 - **Real-Time Tracking**: Monitor participant counts and spin statistics directly from the landing page.
 - **Inventory Management**: Daily reset capabilities and live tracking of prize awardees.
 - **CSV Export**: Instantly download winner logs and registered user data for CRM integration.
