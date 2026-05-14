@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuzzy Friends Cambodia - Lucky Spin</title>
+    <meta name="description"
+        content="Register, follow Fuzzy Friends Cambodia on social media, and spin the Lucky Wheel for amazing prizes!">
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&family=Outfit:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+    <!-- Floating Decorations -->
+    <div class="floaties" aria-hidden="true">
+        <span class="floatie f1">🍼</span>
+        <span class="floatie f2">⭐</span>
+        <span class="floatie f3">🧸</span>
+        <span class="floatie f4">🌟</span>
+        <span class="floatie f5">💛</span>
+    </div>
+
+    <!-- ─── Pages Wrapper ─── -->
+    <div class="pages-wrapper">
+
+        <!-- ══════════════════════════════
+         PAGE 1 — Register to Play
+    ══════════════════════════════ -->
+        <div class="page active" id="page-1">
+            <div class="page-inner">
+
+                <!-- Header -->
+                <header class="header">
+                    <div class="logo-container">
+                        <img src="logo.png" alt="Fuzzy Friends Cambodia Logo" class="logo">
+                    </div>
+                    <h1 class="title">Fuzzy Friends Cambodia</h1>
+                    <p class="subtitle">Spin the Lucky Wheel &amp; win amazing prizes! ✨</p>
+                </header>
+
+                <!-- Step Indicator -->
+                <div class="step-indicator" aria-label="Step 1 of 2">
+                    <div class="step-track">
+                        <div class="step-dot active" id="dot-1"></div>
+                        <div class="step-line"></div>
+                        <div class="step-dot" id="dot-2"></div>
+                        <div class="step-line"></div>
+                        <div class="step-dot" id="dot-3"></div>
+                    </div>
+                    <p class="step-label">Step 1 of 3 — Register</p>
+                </div>
+
+                <!-- Register Form -->
+                <section class="register-card" aria-labelledby="register-heading">
+                    <div class="register-icon">🎟️</div>
+                    <h2 id="register-heading" class="card-title">Register to Play</h2>
+                    <p class="card-desc">Enter your details to get your free spin!</p>
+
+                    <div class="form-group">
+                        <label for="user-name" class="form-label">Your Name</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-user input-icon"></i>
+                            <input type="text" id="user-name" class="form-input"
+                                placeholder="e.g. Fuzzy Friends Cambodia" autocomplete="name">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="user-contact" class="form-label">Phone or Email</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-phone input-icon"></i>
+                            <input type="text" id="user-contact" class="form-input" placeholder="e.g. 016 785 858"
+                                autocomplete="tel">
+                        </div>
+                    </div>
+
+                    <div id="register-error" class="error-msg" role="alert" aria-live="polite"></div>
+
+                    <button class="btn-primary" id="register-btn" onclick="goToPage2()">
+                        Continue <i class="fas fa-arrow-right"></i>
+                    </button>
+                </section>
+
+                <!-- QR share -->
+                <section class="qr-section">
+                    <p class="qr-text">📲 Share Fuzzy Friends</p>
+                    <div class="qrcode-wrapper">
+                        <img src="qr_with_logo.png" alt="Branded QR Code" class="static-qr">
+                    </div>
+                    <a href="qr_with_logo.png" download="FuzzyFriends_QR.png" class="download-btn">
+                        <i class="fas fa-download"></i> Download QR
+                    </a>
+                </section>
+
+                <footer class="footer">
+                    <p>&copy; 2026 Fuzzy Friends Cambodia. All rights reserved.</p>
+                </footer>
+
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════
+         PAGE 2 — Follow Platforms
+    ══════════════════════════════ -->
+        <div class="page" id="page-2">
+            <div class="page-inner">
+
+                <!-- Header -->
+                <header class="header">
+                    <div class="logo-container">
+                        <img src="logo.png" alt="Fuzzy Friends Cambodia Logo" class="logo">
+                    </div>
+                    <h1 class="title">Almost There! 🎉</h1>
+                    <p class="subtitle" id="greeting-text">Follow all platforms to unlock your spin</p>
+                </header>
+
+                <!-- Step Indicator -->
+                <div class="step-indicator" aria-label="Step 2 of 3">
+                    <div class="step-track">
+                        <div class="step-dot done" id="dot-1b"></div>
+                        <div class="step-line filled"></div>
+                        <div class="step-dot active" id="dot-2b"></div>
+                        <div class="step-line"></div>
+                        <div class="step-dot" id="dot-3b"></div>
+                    </div>
+                    <p class="step-label">Step 2 of 3 — Follow &amp; Unlock</p>
+                </div>
+
+                <!-- Follow counter -->
+                <div class="follow-counter">
+                    <span id="follow-count">0</span><span>/4</span> platforms followed
+                    <div class="follow-bar-bg">
+                        <div class="follow-bar-fill" id="follow-bar"></div>
+                    </div>
+                </div>
+
+                <!-- Social Link Cards -->
+                <main class="links-container" aria-label="Social media platforms">
+                    <a href="https://www.facebook.com/share/18BUe2YEEz/" class="link-card" target="_blank"
+                        rel="noopener" id="fb-link" onclick="markFollowed('fb-link')">
+                        <div class="icon fb"><i class="fab fa-facebook-f"></i></div>
+                        <span class="link-text">Facebook Page</span>
+                        <div class="checkmark"><i class="fas fa-check-circle"></i></div>
+                    </a>
+
+                    <a href="https://www.instagram.com/fuzzy_friendskh?igsh=MXZ5NncwMTd2M2NhdQ==" class="link-card"
+                        target="_blank" rel="noopener" id="ig-link" onclick="markFollowed('ig-link')">
+                        <div class="icon ig"><i class="fab fa-instagram"></i></div>
+                        <span class="link-text">Instagram</span>
+                        <div class="checkmark"><i class="fas fa-check-circle"></i></div>
+                    </a>
+
+                    <a href="https://www.tiktok.com/@fuzzy.friends.cam?_r=1&_t=ZS-93lTp9lK66M" class="link-card"
+                        target="_blank" rel="noopener" id="tt-link" onclick="markFollowed('tt-link')">
+                        <div class="icon tt"><i class="fab fa-tiktok"></i></div>
+                        <span class="link-text">TikTok</span>
+                        <div class="checkmark"><i class="fas fa-check-circle"></i></div>
+                    </a>
+
+                    <a href="https://t.me/+wdP7yYcNklZjMDA1" class="link-card" target="_blank" rel="noopener"
+                        id="tg-link" onclick="markFollowed('tg-link')">
+                        <div class="icon tg"><i class="fab fa-telegram-plane"></i></div>
+                        <span class="link-text">Telegram Channel</span>
+                        <div class="checkmark"><i class="fas fa-check-circle"></i></div>
+                    </a>
+                </main>
+
+                <!-- Unlock Button (hidden until all followed) -->
+                <div class="game-unlock-section" id="game-unlock-section" style="display:none;">
+                    <p class="unlock-label">🎊 All platforms followed!</p>
+                    <button class="btn-unlock" id="go-to-game-btn" onclick="goToPage3()">
+                        🎡 Unlock My Spin!
+                    </button>
+                </div>
+
+                <!-- Back -->
+                <button class="btn-back" onclick="goToPage1()">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+
+                <footer class="footer">
+                    <p>&copy; 2026 Fuzzy Friends Cambodia. All rights reserved.</p>
+                </footer>
+
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════
+         PAGE 3 — Launch Game
+    ══════════════════════════════ -->
+        <div class="page" id="page-3">
+            <div class="page-inner page-center">
+
+                <!-- Burst animation -->
+                <div class="burst-container" aria-hidden="true">
+                    <div class="burst-ring r1"></div>
+                    <div class="burst-ring r2"></div>
+                    <div class="burst-ring r3"></div>
+                </div>
+
+                <div class="launch-card">
+                    <div class="launch-emoji">🎡</div>
+                    <h2 class="launch-title">You're Ready!</h2>
+                    <p class="launch-name" id="launch-name-text">Good luck on your spin!</p>
+                    <p class="launch-desc">Your Lucky Spin Wheel is unlocked. May luck be on your side! 🍀</p>
+
+                    <div class="countdown-wrap" id="countdown-wrap">
+                        <span>Starting in </span>
+                        <span class="countdown-num" id="countdown-num">3</span>
+                    </div>
+
+                    <a href="game/index.html" class="btn-launch" id="launch-btn">
+                        🎰 START LUCKY SPIN NOW
+                    </a>
+                </div>
+
+                <footer class="footer" style="margin-top:32px;">
+                    <p>&copy; 2026 Fuzzy Friends Cambodia. All rights reserved.</p>
+                </footer>
+
+            </div>
+        </div>
+
+    </div><!-- /pages-wrapper -->
+
+    <script src="script.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎡 Lucky Spin Wheel – Fuzzy Friends Cambodia</title>
+    <meta name="description" content="Spin the Lucky Wheel and win amazing prizes from Fuzzy Friends Cambodia!">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="../logo.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Confetti Container -->
+    <div id="confetti-container" aria-hidden="true"></div>
+
+    <!-- Floating Decorations -->
+    <div class="floaties" aria-hidden="true">
+        <span class="floatie f1">🍼</span>
+        <span class="floatie f2">⭐</span>
+        <span class="floatie f3">🧸</span>
+        <span class="floatie f4">🌟</span>
+        <span class="floatie f5">💛</span>
+        <span class="floatie f6">🎁</span>
+        <span class="floatie f7">🎀</span>
+    </div>
+
+
+    <div class="page-wrapper">
+        <!-- Header -->
+        <header class="header">
+            <a href="../index.html" class="back-btn" id="back-btn">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+            <div class="logo-container">
+                <img src="../logo.png" alt="Fuzzy Friends Cambodia Logo" class="logo"
+                    onerror="this.src='https://placehold.co/100x100/FFB3C6/fff?text=FF'">
+            </div>
+            <h1 class="title">Lucky Spin Wheel</h1>
+            <p class="subtitle">✨ Spin once and win amazing prizes! ✨</p>
+        </header>
+
+        <!-- Already Played Banner -->
+        <div class="already-played-banner" id="already-played-banner" style="display:none;">
+            <div class="banner-icon">🎁</div>
+            <div class="banner-text">
+                <strong>You've already played!</strong>
+                <span id="banner-prize-name">You won a prize earlier.</span>
+            </div>
+        </div>
+
+        <!-- Prize Inventory Display -->
+        <div class="prizes-grid" id="prizes-grid">
+            <div class="prize-item" data-prize="voucher">
+                <div class="prize-icon">🎫</div>
+                <div class="prize-label">Voucher $1</div>
+                <div class="prize-count" id="count-voucher">300 left</div>
+            </div>
+            <div class="prize-item" data-prize="diaper">
+                <div class="prize-icon">🩲</div>
+                <div class="prize-label">Free Diaper</div>
+                <div class="prize-count" id="count-diaper">10 left</div>
+            </div>
+            <div class="prize-item" data-prize="happi">
+                <div class="prize-icon">👜</div>
+                <div class="prize-label">HAPPi Bag</div>
+                <div class="prize-count" id="count-happi">10 left</div>
+            </div>
+            <div class="prize-item" data-prize="crocs">
+                <div class="prize-icon">👟</div>
+                <div class="prize-label">Croc Shoes</div>
+                <div class="prize-count" id="count-crocs">15 left</div>
+            </div>
+            <div class="prize-item" data-prize="sample">
+                <div class="prize-icon">🎀</div>
+                <div class="prize-label">Sample Pack</div>
+                <div class="prize-count" id="count-sample">30 left</div>
+            </div>
+        </div>
+
+        <!-- Wheel Section -->
+        <div class="wheel-section">
+            <div class="wheel-outer-ring">
+                <div class="wheel-container" id="wheel-container">
+                    <canvas id="wheel-canvas" width="320" height="320"></canvas>
+                    <!-- Pointer -->
+                    <div class="wheel-pointer" aria-hidden="true">▼</div>
+                </div>
+            </div>
+
+            <!-- Spin Button -->
+            <button class="spin-btn" id="spin-btn">
+                <span class="spin-btn-icon">🎡</span>
+                <span class="spin-btn-text">SPIN NOW!</span>
+            </button>
+
+            <p class="spin-note" id="spin-note">You can only spin once. Make it count! 🍀</p>
+        </div>
+
+        <!-- Prize Modal -->
+        <div class="modal-overlay" id="modal-overlay" aria-modal="true" role="dialog" style="display:none;">
+            <div class="modal-card" id="modal-card">
+                <button class="modal-x-close" id="modal-x-close" aria-label="Close modal">&times;</button>
+                <div class="modal-sparkles" aria-hidden="true">✨</div>
+                <div class="modal-prize-icon" id="modal-prize-icon">🎁</div>
+                <h2 class="modal-title" id="modal-title">Congratulations!</h2>
+                <p class="modal-prize-name" id="modal-prize-name">You won a prize!</p>
+                <p class="modal-instructions" id="modal-instructions">Please show this screen to our staff to claim your
+                    prize.</p>
+                <div class="modal-user-info" id="modal-user-info"></div>
+                <button class="modal-close-btn" id="modal-close-btn">🎉 Awesome! Thank you!</button>
+            </div>
+        </div>
+
+        <!-- Out of Stock Modal -->
+        <div class="modal-overlay" id="outofstock-overlay" aria-modal="true" role="dialog" style="display:none;">
+            <div class="modal-card modal-card--sad" id="outofstock-card">
+                <div class="modal-prize-icon">😢</div>
+                <h2 class="modal-title">Sold Out!</h2>
+                <p class="modal-prize-name" id="outofstock-msg">This prize is sold out for today.</p>
+                <p class="modal-instructions">You're being redirected to spin again…</p>
+            </div>
+        </div>
+
+        <!-- Admin Login Modal -->
+        <div class="modal-overlay" id="admin-login-overlay" style="display:none;">
+            <div class="modal-card admin-login-card">
+                <div class="modal-prize-icon">🔐</div>
+                <h2 class="modal-title">Staff Login</h2>
+                <p class="modal-instructions">Enter your details to access the dashboard.</p>
+
+                <div class="admin-login-form">
+                    <div class="form-group">
+                        <label class="form-label">Your Name</label>
+                        <input type="text" id="admin-login-name" class="form-input" placeholder="Enter your name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Admin Password</label>
+                        <input type="password" id="admin-login-pass" class="form-input" placeholder="••••••••">
+                    </div>
+                    <div id="admin-login-error" class="error-msg"
+                        style="display:none; color: #ff4d8d; font-size: 0.8rem; margin-bottom: 1rem;"></div>
+                    <button class="btn-primary" id="admin-login-submit">Login to Dashboard</button>
+                    <button class="btn-back"
+                        style="margin-top: 10px; width: 100%; border: none; background: none; color: var(--text-sub);"
+                        id="admin-login-cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Dashboard Modal -->
+        <div class="modal-overlay" id="admin-overlay" aria-modal="true" role="dialog" style="display:none;">
+            <div class="modal-card admin-dashboard">
+                <div class="modal-header">
+                    <div>
+                        <h2 class="modal-title">📊 Admin Dashboard</h2>
+                        <p class="staff-tag" id="admin-staff-name">Staff Access</p>
+                    </div>
+                    <button class="close-admin" id="admin-close-btn">&times;</button>
+                </div>
+
+                <div class="admin-stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-label">Total Participants</span>
+                        <span class="stat-value" id="admin-total-players">0</span>
+                    </div>
+                </div>
+
+                <div class="admin-table-container">
+                    <h3>Inventory Status</h3>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Prize</th>
+                                <th>Awarded</th>
+                                <th>Left</th>
+                                <th>Limit</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-inventory-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="admin-table-container">
+                    <h3>Recent Awardees</h3>
+                    <div class="admin-log-scroll">
+                        <table class="admin-table admin-table--logs">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Contact</th>
+                                    <th>Prize</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-logs-body">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="admin-actions">
+                    <button class="admin-btn export-btn" id="admin-export-btn">
+                        <i class="fas fa-file-csv"></i> Download CSV Log
+                    </button>
+                    <button class="admin-btn reset-btn" id="admin-reset-btn">
+                        <i class="fas fa-undo"></i> Reset Daily Counts
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>© 2026 Fuzzy Friends Cambodia. <span class="admin-trigger" id="admin-trigger">Join Admin Panel</span></p>
+        </footer>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+
+</html>
