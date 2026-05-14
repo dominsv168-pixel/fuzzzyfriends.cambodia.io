@@ -307,7 +307,7 @@ function showError(el, msg) {
   el.classList.add('anim-shake');
 }
 
-const KEY_ALL_LOGS = 'ff_all_logs';
+
 function hasUserAlreadySpun(contact) {
   if (!contact) return false;
   let logs = [];
@@ -362,6 +362,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // Admin listeners
   document.querySelectorAll('.admin-trigger').forEach(t => {
     t.addEventListener('click', showAdminLogin);
+  });
+
+  // Pro Tip: Triple-click footer to open admin login
+  document.querySelectorAll('.footer').forEach(f => {
+    f.addEventListener('click', (e) => {
+      if (e.detail === 3) showAdminLogin();
+    });
+    f.style.cursor = 'default'; // Ensure it doesn't look like a link itself
   });
 
   document.getElementById('admin-login-cancel').addEventListener('click', hideAdminLogin);
