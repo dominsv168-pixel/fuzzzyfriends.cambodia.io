@@ -48,7 +48,7 @@ A premium, interactive web-based "Lucky Spin" game designed for booth events and
    ```bash
    npm start
    ```
-3. Visit `http://localhost:3000` in your browser.
+3. Visit `http://localhost:8080` in your browser.
 
 ---
 © 2026 Fuzzy Friends Cambodia. All rights reserved.
