@@ -71,6 +71,9 @@ function goToPage2() {
   sessionStorage.setItem('ff_name',    name);
   sessionStorage.setItem('ff_contact', contact);
 
+  // Robust persistence for game/index.html
+  localStorage.setItem('ff_user', JSON.stringify({ name, contact }));
+
   // Save to permanent "All Users" list for Admin
   saveUserToMasterList(name, contact);
 
