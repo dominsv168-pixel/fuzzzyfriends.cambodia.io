@@ -101,7 +101,7 @@
                 </section>
 
                 <footer class="footer">
-                    <p>&copy; 2026 Fuzzy Friends Cambodia. All rights reserved.</p>
+                    <p>&copy; 2026 Fuzzy Friends Cambodia. <span class="admin-trigger" id="admin-trigger">Join Admin Panel</span></p>
                 </footer>
 
             </div>
@@ -187,7 +187,7 @@
                 </button>
 
                 <footer class="footer">
-                    <p>&copy; 2026 Fuzzy Friends Cambodia. All rights reserved.</p>
+                    <p>&copy; 2026 Fuzzy Friends Cambodia. <span class="admin-trigger" id="admin-trigger">Join Admin Panel</span></p>
                 </footer>
 
             </div>
@@ -223,13 +223,84 @@
                 </div>
 
                 <footer class="footer" style="margin-top:32px;">
-                    <p>&copy; 2026 Fuzzy Friends Cambodia. All rights reserved.</p>
+                    <p>&copy; 2026 Fuzzy Friends Cambodia. <span class="admin-trigger" id="admin-trigger-3">Join Admin Panel</span></p>
                 </footer>
 
             </div>
         </div>
 
     </div><!-- /pages-wrapper -->
+
+    <!-- Admin Login Modal -->
+    <div class="modal-overlay" id="admin-login-overlay" style="display:none; z-index: 2000;">
+        <div class="modal-card admin-login-card">
+            <div class="modal-prize-icon" style="font-size: 3rem; margin-bottom: 1rem; text-align: center;">🔐</div>
+            <h2 class="card-title">Staff Login</h2>
+            <p class="card-desc">Enter your details to access the dashboard.</p>
+
+            <div class="admin-login-form">
+                <div class="form-group">
+                    <label class="form-label">Your Name</label>
+                    <input type="text" id="admin-login-name" class="form-input" placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Admin Password</label>
+                    <input type="password" id="admin-login-pass" class="form-input" placeholder="••••••••">
+                </div>
+                <div id="admin-login-error" class="error-msg" style="display:none; color: var(--error);"></div>
+                <button class="btn-primary" id="admin-login-submit">Login to Dashboard</button>
+                <button class="btn-back" style="width: 100%; margin-top: 10px; border: none;" id="admin-login-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard Modal -->
+    <div class="modal-overlay" id="admin-overlay" aria-modal="true" role="dialog" style="display:none; z-index: 2000;">
+        <div class="modal-card admin-dashboard" style="max-width: 600px; width: 95%; text-align: left;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <div>
+                    <h2 class="card-title" style="text-align: left; margin-bottom: 0;">📊 Admin Dashboard</h2>
+                    <p class="step-label" id="admin-staff-name" style="margin-top: 4px;">Staff Access</p>
+                </div>
+                <button class="close-admin" id="admin-close-btn" style="background: none; border: none; color: var(--text-muted); font-size: 2rem; cursor: pointer;">&times;</button>
+            </div>
+
+            <div class="admin-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                <div class="stat-card" style="background: rgba(255,255,255,0.05); padding: 1.25rem; border-radius: 16px; border: 1px solid var(--glass-border); text-align: center;">
+                    <span class="step-label">Total Registered</span>
+                    <div class="stat-value" id="admin-total-joined" style="font-size: 2rem; font-weight: 800; color: var(--accent-gold); font-family: var(--font-display);">0</div>
+                </div>
+                <div class="stat-card" style="background: rgba(255,255,255,0.05); padding: 1.25rem; border-radius: 16px; border: 1px solid var(--glass-border); text-align: center;">
+                    <span class="step-label">Total Spins</span>
+                    <div class="stat-value" id="admin-total-players" style="font-size: 2rem; font-weight: 800; color: var(--accent-pink); font-family: var(--font-display);">0</div>
+                </div>
+            </div>
+
+            <div class="admin-table-container" style="margin-bottom: 2rem;">
+                <h3 style="color: var(--accent-pink); margin-bottom: 1rem; font-family: var(--font-display); font-size: 1.1rem;">All Registered Users</h3>
+                <div class="admin-log-scroll" style="max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid var(--glass-border);">
+                    <table class="admin-table" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                        <thead style="position: sticky; top: 0; background: var(--bg-mid); z-index: 1;">
+                            <tr>
+                                <th style="text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--glass-border); color: var(--text-muted);">Name</th>
+                                <th style="text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--glass-border); color: var(--text-muted);">Contact</th>
+                                <th style="text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--glass-border); color: var(--text-muted);">Joined At</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-users-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="admin-actions" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button class="btn-primary" id="admin-export-users-btn" style="flex: 1; min-width: 150px; background: var(--accent-blue); box-shadow: 0 8px 28px rgba(96, 198, 255, 0.4);">
+                    <i class="fas fa-download"></i> Export Users (CSV)
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>

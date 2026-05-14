@@ -10,6 +10,14 @@ let followedPlatforms = new Set();
 const TOTAL_PLATFORMS = 4;
 let userName = '';
 
+/** Simple email/phone validation */
+function isValidContact(val) {
+  // Regex for basic email or phone (8-15 digits)
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^[0-9+ \-()]{8,18}$/;
+  return emailRegex.test(val) || phoneRegex.test(val);
+}
+
 /* ── Page Navigation ── */
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => {
@@ -40,6 +48,11 @@ function goToPage2() {
   }
   if (!contact) {
     showError(errorEl, '⚠️ Please enter your phone number or email.');
+    contactEl.focus();
+    return;
+  }
+  if (!isValidContact(contact)) {
+    showError(errorEl, '⚠️ Please enter a valid phone number or email.');
     contactEl.focus();
     return;
   }
@@ -142,6 +155,8 @@ function markFollowed(linkId) {
     card.classList.add('followed');
     followedPlatforms.add(linkId);
 
+    // Persist follow progress
+    sessionStorage.setItem('ff_follows', JSON.stringify(Array.from(followedPlatforms)));
     updateFollowCounter();
   }, 300); // slight delay so the link actually opens first
 }
@@ -176,11 +191,112 @@ function startCountdown() {
 
     if (seconds <= 0) {
       clearInterval(tick);
-      if (wrapEl) wrapEl.style.display = 'none';
-      // Auto-navigate
-      window.location.href = 'game/index.html';
+      // Only auto-navigate if we are on the launch page
+      if (document.getElementById('page-3').classList.contains('active')) {
+        window.location.href = 'game/index.html';
+      }
     }
   }, 1000);
+}
+
+/* ── Admin Dashboard Logic ── */
+const KEY_ALL_USERS = 'ff_all_users';
+const KEY_ALL_LOGS  = 'ff_all_logs';
+
+function showAdminLogin() {
+  document.getElementById('admin-login-overlay').style.display = 'flex';
+  document.getElementById('admin-login-name').focus();
+}
+
+function hideAdminLogin() {
+  document.getElementById('admin-login-overlay').style.display = 'none';
+  document.getElementById('admin-login-error').style.display = 'none';
+}
+
+function handleAdminLoginSubmit() {
+  const nameEl  = document.getElementById('admin-login-name');
+  const passEl  = document.getElementById('admin-login-pass');
+  const errorEl = document.getElementById('admin-login-error');
+
+  const name = nameEl.value.trim();
+  const pass = passEl.value.trim();
+
+  if (!name) {
+    errorEl.textContent = 'Please enter your name.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  if (pass === 'admin') {
+    sessionStorage.setItem('ff_staff_name', name);
+    hideAdminLogin();
+    showAdminDashboard();
+  } else {
+    errorEl.textContent = 'Incorrect password.';
+    errorEl.style.display = 'block';
+  }
+}
+
+function showAdminDashboard() {
+  const staffName = sessionStorage.getItem('ff_staff_name') || 'Staff';
+  document.getElementById('admin-staff-name').textContent = `Logged in as: ${staffName}`;
+  
+  // Stats
+  let users = [];
+  let logs  = [];
+  try {
+    users = JSON.parse(localStorage.getItem(KEY_ALL_USERS)) || [];
+    logs  = JSON.parse(localStorage.getItem(KEY_ALL_LOGS))  || [];
+  } catch (e) { }
+
+  document.getElementById('admin-total-joined').textContent = users.length;
+  document.getElementById('admin-total-players').textContent = logs.length;
+
+  // Table
+  const body = document.getElementById('admin-users-body');
+  body.innerHTML = '';
+  [...users].reverse().forEach(u => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td style="padding: 0.75rem; border-bottom: 1px solid var(--glass-border);">${u.name}</td>
+      <td style="padding: 0.75rem; border-bottom: 1px solid var(--glass-border);">${u.contact}</td>
+      <td style="padding: 0.75rem; border-bottom: 1px solid var(--glass-border); color: var(--text-muted);">${u.date}</td>
+    `;
+    body.appendChild(row);
+  });
+
+  document.getElementById('admin-overlay').style.display = 'flex';
+}
+
+function hideAdminDashboard() {
+  document.getElementById('admin-overlay').style.display = 'none';
+}
+
+function exportUsersToCSV() {
+  let users = [];
+  try {
+    users = JSON.parse(localStorage.getItem(KEY_ALL_USERS)) || [];
+  } catch (e) { return alert('No data to export.'); }
+
+  if (users.length === 0) return alert('No data to export.');
+
+  const headers = ['Name', 'Contact', 'Joined At'];
+  const rows = users.map(u => [
+    `"${u.name.replace(/"/g, '""')}"`,
+    `"${u.contact.replace(/"/g, '""')}"`,
+    `"${u.date}"`
+  ]);
+
+  const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `fuzzy_friends_users_all.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 /* ── Utility: Show Error ── */
@@ -213,11 +329,48 @@ document.addEventListener('DOMContentLoaded', () => {
     saveUserToMasterList(savedName, savedContact);
   }
 
+  // Restore follow progress
+  const savedFollows = sessionStorage.getItem('ff_follows');
+  if (savedFollows) {
+    try {
+      const follows = JSON.parse(savedFollows);
+      follows.forEach(id => {
+        const card = document.getElementById(id);
+        if (card) {
+          card.classList.add('followed');
+          followedPlatforms.add(id);
+        }
+      });
+      updateFollowCounter();
+    } catch (e) { console.error('Error restoring follows', e); }
+  }
+
   // Allow Enter key on form
   document.getElementById('user-name').addEventListener('keydown', e => {
-    if (e.key === 'Enter') document.getElementById('user-contact').focus();
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('user-contact').focus();
+    }
   });
   document.getElementById('user-contact').addEventListener('keydown', e => {
-    if (e.key === 'Enter') goToPage2();
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      goToPage2();
+    }
+  });
+
+  // Admin listeners
+  const triggers = [document.getElementById('admin-trigger'), document.getElementById('admin-trigger-3')];
+  triggers.forEach(t => {
+    if (t) t.addEventListener('click', showAdminLogin);
+  });
+
+  document.getElementById('admin-login-cancel').addEventListener('click', hideAdminLogin);
+  document.getElementById('admin-login-submit').addEventListener('click', handleAdminLoginSubmit);
+  document.getElementById('admin-close-btn').addEventListener('click', hideAdminDashboard);
+  document.getElementById('admin-export-users-btn').addEventListener('click', exportUsersToCSV);
+
+  document.getElementById('admin-login-pass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleAdminLoginSubmit();
   });
 });

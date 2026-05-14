@@ -116,10 +116,14 @@ function pickPrize(counts) {
     });
     if (!pool.length) {
         // If everything is sold out, we can't spin. 
-        // This should be handled before calling pickPrize, but as a last resort:
         return null; 
     }
     return pool[Math.floor(Math.random() * pool.length)];
+}
+
+/** Check if all prizes are sold out today. */
+function isEverythingSoldOut(counts) {
+    return !PRIZES.some(prize => remaining(prize.id, counts) > 0);
 }
 
 /** Check if this specific contact info has already spun in the master logs. */
@@ -359,21 +363,31 @@ function drawWheel(rotation) {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    const counts = getDailyCounts();
+
     VISUAL_PRIZES.forEach((prize, i) => {
         const startAngle = rotation + i * ARC;
         const endAngle = startAngle + ARC;
         const midAngle = startAngle + ARC / 2;
+        
+        const isSoldOut = remaining(prize.id, counts) <= 0;
 
         // Segment fill
         ctx.beginPath();
         ctx.moveTo(cx, cy);
         ctx.arc(cx, cy, r, startAngle, endAngle);
         ctx.closePath();
-        ctx.fillStyle = prize.color;
+        
+        // Desaturate if sold out
+        if (isSoldOut) {
+            ctx.fillStyle = '#444'; // Dark grey for sold out
+        } else {
+            ctx.fillStyle = prize.color;
+        }
         ctx.fill();
 
         // Segment border
-        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
         ctx.lineWidth = 2.5;
         ctx.stroke();
 
@@ -386,6 +400,8 @@ function drawWheel(rotation) {
         ctx.font = '18px serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
+        
+        if (isSoldOut) ctx.globalAlpha = 0.4;
         ctx.fillText(prize.emoji, 0, -14);
         ctx.restore();
 
@@ -395,7 +411,7 @@ function drawWheel(rotation) {
         ctx.rotate(midAngle);
         ctx.translate(r * 0.60, 0);
         ctx.rotate(Math.PI / 2);
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = isSoldOut ? '#888' : '#fff';
         ctx.font = `bold 10px 'Nunito', sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -403,7 +419,8 @@ function drawWheel(rotation) {
         ctx.shadowBlur = 3;
 
         const maxW = r * 0.52;
-        const lines = wrapText(ctx, prize.label, maxW);
+        const labelText = isSoldOut ? 'SOLD OUT' : prize.label;
+        const lines = wrapText(ctx, labelText, maxW);
         const lineH = 12;
         const totalH = lines.length * lineH;
         lines.forEach((line, li) => {
@@ -646,6 +663,14 @@ function showAlreadyPlayedBanner(prizeLabel) {
             const prize = PRIZES.find(p => p.id === prizeId) || PRIZES[0];
             showModal(prize);
         }, 600);
+        return;
+    }
+
+    // Check if everything is sold out for today
+    if (isEverythingSoldOut(counts)) {
+        spinBtn.disabled = true;
+        spinBtn.querySelector('.spin-btn-text').textContent = 'Sold Out!';
+        spinNote.textContent = 'All prizes are out of stock for today. Check back tomorrow! 🎈';
         return;
     }
 
