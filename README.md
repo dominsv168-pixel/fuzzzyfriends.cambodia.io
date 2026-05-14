@@ -35,9 +35,20 @@ A premium, interactive web-based "Lucky Spin" game designed for booth events and
   - `style.css`: Specialized wheel and modal styling.
 
 ## 🛠️ Setup & Usage
-1. Clone the repository.
-2. Open `index.html` in any modern web browser.
-3. Access the Admin Panel via the footer trigger (triple-click or link) to view stats.
+
+### Option 1: Static (Local)
+1. Open `index.html` in any modern web browser.
+
+### Option 2: Node.js Server (Recommended)
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Start the server:
+   ```bash
+   npm start
+   ```
+3. Visit `http://localhost:3000` in your browser.
 
 ---
 © 2026 Fuzzy Friends Cambodia. All rights reserved.
