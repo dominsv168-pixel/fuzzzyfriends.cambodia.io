@@ -68,6 +68,7 @@ const KEY_SPUN = 'ff_spun';        // { spun: true, prizeId, prizeLabel, ts }
 const KEY_DAILY_DATE = 'ff_daily_date';  // ISO date string (YYYY-MM-DD)
 const KEY_DAILY_COUNT = 'ff_daily_count'; // { voucher: n, diaper: n, ... }
 const KEY_ALL_LOGS = 'ff_all_logs';     // Array of { name, contact, prize, date }
+const KEY_ALL_USERS = 'ff_all_users';    // Array of { name, contact, date }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 function todayStr() {
@@ -113,8 +114,23 @@ function pickPrize(counts) {
             for (let i = 0; i < prize.weight; i++) pool.push(prize);
         }
     });
-    if (!pool.length) return PRIZES.find(p => p.id === 'voucher'); // fallback
+    if (!pool.length) {
+        // If everything is sold out, we can't spin. 
+        // This should be handled before calling pickPrize, but as a last resort:
+        return null; 
+    }
     return pool[Math.floor(Math.random() * pool.length)];
+}
+
+/** Check if this specific contact info has already spun in the master logs. */
+function hasUserAlreadySpun(contact) {
+    if (!contact) return false;
+    let logs = [];
+    try {
+        logs = JSON.parse(localStorage.getItem(KEY_ALL_LOGS)) || [];
+    } catch (e) { return false; }
+    
+    return logs.some(log => log.contact && log.contact.toLowerCase().trim() === contact.toLowerCase().trim());
 }
 
 /** Get stored spin result. */
@@ -177,6 +193,33 @@ function exportToCSV() {
     link.setAttribute('download', `fuzzy_friends_winners_${todayStr()}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
+    document.body.removeChild(link);
+}
+
+/** Export all registered users as CSV. */
+function exportUsersToCSV() {
+    let users = [];
+    try {
+        users = JSON.parse(localStorage.getItem(KEY_ALL_USERS)) || [];
+    } catch (e) { return alert('No user data to export.'); }
+
+    if (users.length === 0) return alert('No user data to export.');
+
+    const headers = ['Name', 'Contact', 'Joined At'];
+    const rows = users.map(u => [
+        `"${u.name.replace(/"/g, '""')}"`,
+        `"${u.contact.replace(/"/g, '""')}"`,
+        `"${u.date}"`
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `fuzzy_friends_users_${todayStr()}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 }
@@ -188,12 +231,32 @@ function showAdminDashboard() {
     const tableBody = document.getElementById('admin-inventory-body');
     const logsBody = document.getElementById('admin-logs-body');
 
-    // Total Players
+    // Total Players & Registered
     let logs = [];
+    let users = [];
     try { logs = JSON.parse(localStorage.getItem(KEY_ALL_LOGS)) || []; } catch (e) { }
+    try { users = JSON.parse(localStorage.getItem(KEY_ALL_USERS)) || []; } catch (e) { }
+    
     playersEl.textContent = logs.length;
+    const joinedEl = document.getElementById('admin-total-joined');
+    if (joinedEl) joinedEl.textContent = users.length;
 
-    // 1. Inventory Table
+    // 1. Registered Users Table
+    const usersBody = document.getElementById('admin-users-body');
+    if (usersBody) {
+        usersBody.innerHTML = '';
+        [...users].reverse().forEach(u => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${u.name}</td>
+                <td>${u.contact}</td>
+                <td style="color: var(--text-sub)">${u.date}</td>
+            `;
+            usersBody.appendChild(row);
+        });
+    }
+
+    // 2. Inventory Table
     const counts = getDailyCounts();
     tableBody.innerHTML = '';
 
@@ -220,7 +283,7 @@ function showAdminDashboard() {
         tableBody.appendChild(row);
     });
 
-    // 2. Winners Log Table
+    // 3. Winners Log Table
     logsBody.innerHTML = '';
     // Show most recent first
     [...logs].reverse().forEach(log => {
@@ -264,7 +327,10 @@ function hideAdminLogin() {
 // ─── Canvas Wheel Drawing ──────────────────────────────────────────────────────
 const canvas = document.getElementById('wheel-canvas');
 const ctx = canvas.getContext('2d');
-const NUM_SEGMENTS = PRIZES.length;
+
+// Double the segments visually to make the wheel look more "pro"
+const VISUAL_PRIZES = [...PRIZES, ...PRIZES]; 
+const NUM_SEGMENTS = VISUAL_PRIZES.length;
 const ARC = (2 * Math.PI) / NUM_SEGMENTS;
 
 function wrapText(ctx, text, maxWidth) {
@@ -293,7 +359,7 @@ function drawWheel(rotation) {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    PRIZES.forEach((prize, i) => {
+    VISUAL_PRIZES.forEach((prize, i) => {
         const startAngle = rotation + i * ARC;
         const endAngle = startAngle + ARC;
         const midAngle = startAngle + ARC / 2;
@@ -381,13 +447,13 @@ function spinTo(prizeIndex, onDone) {
     spinBtn.disabled = true;
     canvas.classList.add('spinning');
 
-    // We want the pointer (top = -π/2) to land in the middle of the target segment.
-    // Segment midAngle (from current drawing) = currentRotation + prizeIndex * ARC + ARC/2
-    // We need that angle to equal -π/2 (mod 2π) at end.
-    // targetRotation = -π/2 - prizeIndex*ARC - ARC/2  (mod 2π) + multiple full rotations
+    // To make it look better, we pick one of the two segments for the target prize
+    const indices = [];
+    VISUAL_PRIZES.forEach((p, idx) => { if (p.id === PRIZES[prizeIndex].id) indices.push(idx); });
+    const visualIndex = indices[Math.floor(Math.random() * indices.length)];
 
-    const fullSpins = 5 + Math.floor(Math.random() * 4); // 5–8 full spins
-    const targetAngle = -Math.PI / 2 - prizeIndex * ARC - ARC / 2;
+    const fullSpins = 6 + Math.floor(Math.random() * 4); // 6–10 full spins
+    const targetAngle = -Math.PI / 2 - visualIndex * ARC - ARC / 2;
     let target = targetAngle % (2 * Math.PI);
     if (target > currentRotation % (2 * Math.PI)) {
         target -= 2 * Math.PI;
@@ -399,9 +465,11 @@ function spinTo(prizeIndex, onDone) {
     const startTs = performance.now();
 
     function easeOut(t) {
-        // Cubic ease-out
-        return 1 - Math.pow(1 - t, 3);
+        // Quintic ease-out for smoother finish
+        return 1 - Math.pow(1 - t, 5);
     }
+
+    let lastSegment = -1;
 
     function frame(now) {
         const elapsed = now - startTs;
@@ -410,6 +478,19 @@ function spinTo(prizeIndex, onDone) {
 
         currentRotation = startRot + (targetRotation - startRot) * eased;
         drawWheel(currentRotation);
+
+        // Pointer "Tick" animation logic
+        const currentSegment = Math.floor((( -currentRotation + Math.PI/2) % (2 * Math.PI)) / ARC);
+        if (currentSegment !== lastSegment) {
+            const pointer = document.querySelector('.wheel-pointer');
+            if (pointer) {
+                pointer.style.transform = 'translateX(-50%) scale(1.4) translateY(-5px)';
+                setTimeout(() => {
+                    pointer.style.transform = 'translateX(-50%) scale(1) translateY(0)';
+                }, 50);
+            }
+            lastSegment = currentSegment;
+        }
 
         if (progress < 1) {
             requestAnimationFrame(frame);
@@ -514,6 +595,7 @@ function showAlreadyPlayedBanner(prizeLabel) {
     document.getElementById('modal-x-close').addEventListener('click', hideModal);
     document.getElementById('admin-close-btn').addEventListener('click', hideAdminDashboard);
     document.getElementById('admin-export-btn').addEventListener('click', exportToCSV);
+    document.getElementById('admin-export-users-btn').addEventListener('click', exportUsersToCSV);
     document.getElementById('admin-login-cancel').addEventListener('click', hideAdminLogin);
     document.getElementById('admin-login-submit').addEventListener('click', handleAdminLoginSubmit);
     document.getElementById('admin-login-pass').addEventListener('keydown', e => {
@@ -544,17 +626,24 @@ function showAlreadyPlayedBanner(prizeLabel) {
         });
     }
 
-    // Check if user already spun (lifetime check)
+    // Check if user already spun (lifetime check via contact info)
+    const user = getUser();
+    const contact = user ? user.contact : '';
     const spunData = getSpunData();
-    if (spunData && spunData.spun) {
+    const alreadySpunByContact = hasUserAlreadySpun(contact);
+
+    if ((spunData && spunData.spun) || alreadySpunByContact) {
         spinBtn.disabled = true;
         spinBtn.querySelector('.spin-btn-text').textContent = 'Already Played!';
         spinNote.textContent = 'You have already used your one spin. 🍀';
-        showAlreadyPlayedBanner(spunData.prizeLabel || spunData.prizeId);
+        
+        const label = (spunData && spunData.prizeLabel) ? spunData.prizeLabel : 'your prize';
+        showAlreadyPlayedBanner(label);
 
         // Show their prize in the modal automatically after a brief delay
         setTimeout(() => {
-            const prize = PRIZES.find(p => p.id === spunData.prizeId) || PRIZES[0];
+            const prizeId = spunData ? spunData.prizeId : null;
+            const prize = PRIZES.find(p => p.id === prizeId) || PRIZES[0];
             showModal(prize);
         }, 600);
         return;
@@ -612,6 +701,10 @@ function showAlreadyPlayedBanner(prizeLabel) {
 
         // Pick the prize
         const prize = pickPrize(counts);
+        if (!prize) {
+            alert('Sorry, all prizes are currently out of stock for today! Please check back tomorrow.');
+            return;
+        }
 
         // Find segment index
         const prizeIndex = PRIZES.findIndex(p => p.id === prize.id);
@@ -637,7 +730,8 @@ function showAlreadyPlayedBanner(prizeLabel) {
             localStorage.setItem(KEY_SPUN, JSON.stringify(spinRecord));
 
             // Log to master list for admin/export
-            logEntry(user, prize);
+            const currentUser = getUser();
+            logEntry(currentUser, prize);
 
             // Update UI
             updateCountDisplay(counts);

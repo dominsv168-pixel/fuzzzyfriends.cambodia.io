@@ -44,12 +44,22 @@ function goToPage2() {
     return;
   }
 
+  // Check if this contact has already spun (lifetime check)
+  if (hasUserAlreadySpun(contact)) {
+    showError(errorEl, '⚠️ This contact has already used their free spin!');
+    contactEl.focus();
+    return;
+  }
+
   errorEl.textContent = '';
   userName = name;
 
   // Save to sessionStorage
   sessionStorage.setItem('ff_name',    name);
   sessionStorage.setItem('ff_contact', contact);
+
+  // Save to permanent "All Users" list for Admin
+  saveUserToMasterList(name, contact);
 
   // Update greeting on page 2
   const greet = document.getElementById('greeting-text');
@@ -58,6 +68,29 @@ function goToPage2() {
   // Slide to page 2
   slideToPage('page-1', 'page-2', 'left');
 }
+
+/** Save user to a master list in localStorage for Admin view */
+function saveUserToMasterList(name, contact) {
+  const KEY_ALL_USERS = 'ff_all_users';
+  let users = [];
+  try {
+    users = JSON.parse(localStorage.getItem(KEY_ALL_USERS)) || [];
+  } catch (e) {
+    users = [];
+  }
+
+  // Check if user already exists (by name + contact) to avoid duplicates
+  const exists = users.find(u => u.name === name && u.contact === contact);
+  if (!exists) {
+    users.push({
+      name,
+      contact,
+      date: new Date().toLocaleString()
+    });
+    localStorage.setItem(KEY_ALL_USERS, JSON.stringify(users));
+  }
+}
+
 
 /* ── Page 2 → Page 1 ── */
 function goToPage1() {
@@ -158,13 +191,27 @@ function showError(el, msg) {
   el.classList.add('anim-shake');
 }
 
+const KEY_ALL_LOGS = 'ff_all_logs';
+function hasUserAlreadySpun(contact) {
+  if (!contact) return false;
+  let logs = [];
+  try {
+    logs = JSON.parse(localStorage.getItem(KEY_ALL_LOGS)) || [];
+  } catch (e) { return false; }
+  return logs.some(log => log.contact && log.contact.toLowerCase().trim() === contact.toLowerCase().trim());
+}
+
 /* ── On Load: Restore session if exists ── */
 document.addEventListener('DOMContentLoaded', () => {
   const savedName    = sessionStorage.getItem('ff_name');
   const savedContact = sessionStorage.getItem('ff_contact');
 
-  if (savedName)    document.getElementById('user-name').value    = savedName;
-  if (savedContact) document.getElementById('user-contact').value = savedContact;
+  if (savedName && savedContact) {
+    document.getElementById('user-name').value    = savedName;
+    document.getElementById('user-contact').value = savedContact;
+    // Sync to master list if not already there
+    saveUserToMasterList(savedName, savedContact);
+  }
 
   // Allow Enter key on form
   document.getElementById('user-name').addEventListener('keydown', e => {

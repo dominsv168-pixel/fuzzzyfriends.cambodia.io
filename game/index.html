@@ -167,7 +167,11 @@
 
                 <div class="admin-stats-grid">
                     <div class="stat-card">
-                        <span class="stat-label">Total Participants</span>
+                        <span class="stat-label">Total Registered</span>
+                        <span class="stat-value" id="admin-total-joined">0</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Total Spins</span>
                         <span class="stat-value" id="admin-total-players">0</span>
                     </div>
                 </div>
@@ -190,7 +194,25 @@
                 </div>
 
                 <div class="admin-table-container">
-                    <h3>Recent Awardees</h3>
+                    <h3>All Registered Users</h3>
+                    <div class="admin-log-scroll">
+                        <table class="admin-table admin-table--users">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Contact</th>
+                                    <th>Joined At</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-users-body">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="admin-table-container">
+                    <h3>Recent Awardees (Winners)</h3>
                     <div class="admin-log-scroll">
                         <table class="admin-table admin-table--logs">
                             <thead>
@@ -210,7 +232,10 @@
 
                 <div class="admin-actions">
                     <button class="admin-btn export-btn" id="admin-export-btn">
-                        <i class="fas fa-file-csv"></i> Download CSV Log
+                        <i class="fas fa-trophy"></i> Export Winners
+                    </button>
+                    <button class="admin-btn export-btn" id="admin-export-users-btn" style="background: #7DD4FC;">
+                        <i class="fas fa-users"></i> Export All Users
                     </button>
                     <button class="admin-btn reset-btn" id="admin-reset-btn">
                         <i class="fas fa-undo"></i> Reset Daily Counts

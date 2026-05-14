@@ -720,18 +720,21 @@ body {
     border: 1px solid var(--card-border);
 }
 
-.admin-table--logs {
+.admin-table--logs,
+.admin-table--users {
     font-size: 0.8rem;
 }
 
-.admin-table--logs th {
+.admin-table--logs th,
+.admin-table--users th {
     position: sticky;
     top: 0;
     background: #2a3d36; /* Dark background for sticky header */
     z-index: 1;
 }
 
-.admin-table--logs td {
+.admin-table--logs td,
+.admin-table--users td {
     padding: 0.5rem 0.75rem;
 }
 
