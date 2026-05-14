@@ -20,12 +20,23 @@ if (!fs.existsSync(LOGS_FILE)) fs.writeFileSync(LOGS_FILE, '[]');
 
 function readJSON(file) {
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch (e) { return []; }
+    if (!fs.existsSync(file)) return [];
+    const content = fs.readFileSync(file, 'utf8');
+    return content ? JSON.parse(content) : [];
+  } catch (e) { 
+    console.error(`❌ Error reading ${file}:`, e.message);
+    return []; 
+  }
 }
 
 function writeJSON(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+  try {
+    const dir = path.dirname(file);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(data, null, 2));
+  } catch (e) {
+    console.error(`❌ Error writing to ${file}:`, e.message);
+  }
 }
 
 // ─── API Endpoints ────────────────────────────────────

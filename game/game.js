@@ -183,6 +183,56 @@ function logEntry(user, prize) {
     }).catch(err => console.error('Server log failed', err));
 }
 
+/** Generate and download a prize voucher for the user. */
+function downloadVoucher() {
+    const user = getUser();
+    const spun = getSpunData();
+    if (!spun || !spun.spun) return alert('No prize found to save!');
+
+    const prizeLabel = spun.prizeLabel.replace('\n', ' ');
+    const name = user ? user.name : 'Valued Guest';
+    const contact = user ? user.contact : 'N/A';
+    const date = new Date(spun.ts).toLocaleString();
+    
+    // Simple hash-like code for the voucher
+    const voucherCode = 'FF-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    const content = `
+========================================
+    FUZZY FRIENDS CAMBODIA
+      LUCKY SPIN VOUCHER
+========================================
+
+VOUCHER CODE: ${voucherCode}
+PRIZE WON:    ${prizeLabel}
+
+WINNER DETAILS:
+---------------
+Name:         ${name}
+Contact:      ${contact}
+Won At:       ${date}
+
+INSTRUCTIONS:
+-------------
+Show this voucher (or a screenshot) to
+our staff at the booth to claim your
+prize. 
+
+Thank you for playing with 
+Fuzzy Friends Cambodia! 🧸✨
+========================================
+`;
+
+    const blob = new Blob([content.trim()], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `FuzzyFriends_Voucher_${name.replace(/\s+/g, '_')}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 /** Export all logs as CSV. */
 function exportToCSV() {
     let logs = [];
@@ -652,6 +702,7 @@ function showAlreadyPlayedBanner(prizeLabel) {
     // Common Event Listeners
     document.getElementById('modal-close-btn').addEventListener('click', hideModal);
     document.getElementById('modal-x-close').addEventListener('click', hideModal);
+    document.getElementById('modal-save-btn').addEventListener('click', downloadVoucher);
     document.getElementById('admin-close-btn').addEventListener('click', hideAdminDashboard);
     document.getElementById('admin-export-btn').addEventListener('click', exportToCSV);
     document.getElementById('admin-export-users-btn').addEventListener('click', exportUsersToCSV);

@@ -217,9 +217,14 @@
                         <span class="countdown-num" id="countdown-num">3</span>
                     </div>
 
-                    <a href="game/index.html" class="btn-launch" id="launch-btn">
-                        🎰 START LUCKY SPIN NOW
-                    </a>
+                    <div class="launch-actions" style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
+                        <a href="game/index.html" class="btn-launch" id="launch-btn" style="margin-top: 0;">
+                            🎰 START LUCKY SPIN NOW
+                        </a>
+                        <button class="btn-save-entry" id="save-entry-btn" onclick="downloadEntryTicket()" style="background: rgba(255,255,255,0.1); color: var(--accent-blue); border: 1px solid rgba(96, 198, 255, 0.3); padding: 12px; border-radius: 50px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <i class="fas fa-ticket-alt"></i> Save Entry Ticket
+                        </button>
+                    </div>
                 </div>
 
                 <footer class="footer" style="margin-top:32px;">

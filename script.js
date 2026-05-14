@@ -114,6 +114,49 @@ function saveUserToMasterList(name, contact) {
   }
 }
 
+/** Generate and download an entry ticket for the user. */
+function downloadEntryTicket() {
+  const name = sessionStorage.getItem('ff_name') || 'Valued Guest';
+  const contact = sessionStorage.getItem('ff_contact') || 'N/A';
+  const date = new Date().toLocaleString();
+  
+  const ticketCode = 'FF-ENTRY-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+
+  const content = `
+========================================
+    FUZZY FRIENDS CAMBODIA
+      LUCKY SPIN ENTRY
+========================================
+
+ENTRY CODE:   ${ticketCode}
+STATUS:       UNSPUN 🎡
+
+PLAYER DETAILS:
+---------------
+Name:         ${name}
+Contact:      ${contact}
+Registered:   ${date}
+
+INSTRUCTIONS:
+-------------
+You are now registered for the 
+Fuzzy Friends Lucky Spin! 
+
+Head to the game page and spin 
+the wheel to win amazing prizes!
+========================================
+`;
+
+  const blob = new Blob([content.trim()], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `FuzzyFriends_Entry_${name.replace(/\s+/g, '_')}.txt`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 
 /* ── Page 2 → Page 1 ── */
 function goToPage1() {

@@ -456,6 +456,35 @@ body {
     text-align: left;
 }
 
+.modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.modal-save-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--mint);
+    border: 1px solid rgba(78, 238, 188, 0.3);
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.25s var(--ease);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.modal-save-btn:hover {
+    background: rgba(78, 238, 188, 0.15);
+    border-color: var(--mint);
+    transform: translateY(-2px);
+}
+
 .modal-close-btn {
     background: linear-gradient(135deg, #FF4D8D, #FF85A1);
     color: white;
