@@ -662,12 +662,11 @@ function showAlreadyPlayedBanner(prizeLabel) {
     });
 
     // Admin Access Triggers
-    const trigger = document.getElementById('admin-trigger');
-    const footer = document.querySelector('.footer');
-
-    if (trigger) {
+    document.querySelectorAll('.admin-trigger').forEach(trigger => {
         trigger.addEventListener('click', showAdminLogin);
-    }
+    });
+
+    const footer = document.querySelector('.footer');
 
     // Triple-click shortcut
     if (footer) {
@@ -675,8 +674,6 @@ function showAlreadyPlayedBanner(prizeLabel) {
             if (e.detail === 3) {
                 const savedStaff = sessionStorage.getItem('ff_staff_name');
                 if (savedStaff) {
-                    // If already logged in this session, skip modal
-                    document.getElementById('admin-staff-name').textContent = `Logged in as: ${savedStaff}`;
                     showAdminDashboard();
                 } else {
                     showAdminLogin();
