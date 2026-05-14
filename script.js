@@ -360,9 +360,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Admin listeners
-  const triggers = [document.getElementById('admin-trigger'), document.getElementById('admin-trigger-3')];
-  triggers.forEach(t => {
-    if (t) t.addEventListener('click', showAdminLogin);
+  document.querySelectorAll('.admin-trigger').forEach(t => {
+    t.addEventListener('click', showAdminLogin);
   });
 
   document.getElementById('admin-login-cancel').addEventListener('click', hideAdminLogin);
