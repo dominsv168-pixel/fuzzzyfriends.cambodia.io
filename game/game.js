@@ -20,8 +20,8 @@ const PRIZES = [
         label: 'Voucher $1',
         emoji: '🎫',
         color: '#FF6B9D',        // pink
-        dailyLimit: 300,
-        weight: 30,
+        dailyLimit: 1000,
+        weight: 100,
         claimMsg: 'Show this screen to our staff at the booth to claim your Voucher $1! 🎉',
     },
     {
@@ -67,6 +67,7 @@ const KEY_USER = 'ff_user';        // { name, contact }
 const KEY_SPUN = 'ff_spun';        // { spun: true, prizeId, prizeLabel, ts }
 const KEY_DAILY_DATE = 'ff_daily_date';  // ISO date string (YYYY-MM-DD)
 const KEY_DAILY_COUNT = 'ff_daily_count'; // { voucher: n, diaper: n, ... }
+const KEY_CUSTOM_LIMITS = 'ff_custom_limits'; // { voucher: 300, ... }
 const KEY_ALL_LOGS = 'ff_all_logs';     // Array of { name, contact, prize, date }
 const KEY_ALL_USERS = 'ff_all_users';    // Array of { name, contact, date }
 
@@ -75,33 +76,64 @@ function todayStr() {
     return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 }
 
-/** Return current daily counts (reset if new day). */
+/** Return current daily counts derived from logs (re-calculates for truth). */
 function getDailyCounts() {
-    const storedDate = localStorage.getItem(KEY_DAILY_DATE);
     const today = todayStr();
+    const storedDate = localStorage.getItem(KEY_DAILY_DATE);
+    
+    // If it's a new day, we just update the stored date 
+    // (the counts will naturally be 0 when we filter the logs below)
     if (storedDate !== today) {
-        // New day — reset counts
-        const fresh = {};
-        PRIZES.forEach(p => fresh[p.id] = 0);
         localStorage.setItem(KEY_DAILY_DATE, today);
-        localStorage.setItem(KEY_DAILY_COUNT, JSON.stringify(fresh));
-        return fresh;
     }
+
+    let logs = [];
     try {
-        return JSON.parse(localStorage.getItem(KEY_DAILY_COUNT)) || {};
-    } catch { return {}; }
+        logs = JSON.parse(localStorage.getItem(KEY_ALL_LOGS)) || [];
+    } catch (e) { }
+
+    const dailyCounts = {};
+    PRIZES.forEach(p => dailyCounts[p.id] = 0);
+
+    logs.forEach(log => {
+        const isToday = log.ts ? log.ts.startsWith(today) : log.date.includes(new Date().toLocaleDateString());
+        if (isToday) {
+            const prizeDef = PRIZES.find(p => p.label.replace('\n', ' ') === log.prize);
+            if (prizeDef) dailyCounts[prizeDef.id]++;
+        }
+    });
+
+    return dailyCounts;
 }
 
-function saveDailyCounts(counts) {
-    localStorage.setItem(KEY_DAILY_COUNT, JSON.stringify(counts));
+/** Get current limit for a prize (custom or default). */
+function getPrizeLimit(prizeId) {
+    let custom = {};
+    try {
+        custom = JSON.parse(localStorage.getItem(KEY_CUSTOM_LIMITS)) || {};
+    } catch (e) { }
+    
+    if (custom[prizeId] !== undefined && custom[prizeId] !== null) {
+        return parseInt(custom[prizeId]);
+    }
+    const prize = PRIZES.find(p => p.id === prizeId);
+    return prize ? prize.dailyLimit : 0;
+}
+
+function savePrizeLimit(prizeId, newLimit) {
+    let custom = {};
+    try {
+        custom = JSON.parse(localStorage.getItem(KEY_CUSTOM_LIMITS)) || {};
+    } catch (e) { }
+    custom[prizeId] = parseInt(newLimit);
+    localStorage.setItem(KEY_CUSTOM_LIMITS, JSON.stringify(custom));
 }
 
 /** Get remaining count for a prize today. */
 function remaining(prizeId, counts) {
-    const prize = PRIZES.find(p => p.id === prizeId);
-    if (!prize) return 0;
-    if (!isFinite(prize.dailyLimit)) return Infinity;
-    return Math.max(0, prize.dailyLimit - (counts[prizeId] || 0));
+    const limit = getPrizeLimit(prizeId);
+    if (!isFinite(limit)) return Infinity;
+    return Math.max(0, limit - (counts[prizeId] || 0));
 }
 
 /** Pick a random prize respecting weights and daily limits. */
@@ -166,7 +198,8 @@ function logEntry(user, prize) {
         name: user ? user.name : 'Unknown',
         contact: user ? user.contact : 'Unknown',
         prize: prize.label.replace('\n', ' '),
-        date: new Date().toLocaleString()
+        date: new Date().toLocaleString(),
+        ts: new Date().toISOString()
     });
 
     localStorage.setItem(KEY_ALL_LOGS, JSON.stringify(logs));
@@ -323,6 +356,20 @@ function showAdminDashboard() {
 
     // 2. Inventory Table
     const counts = getDailyCounts();
+    const today = todayStr();
+    
+    // Calculate actual awarded counts from logs (for today)
+    const awardedToday = {};
+    PRIZES.forEach(p => awardedToday[p.id] = 0);
+    logs.forEach(log => {
+        // Match by date and prize label
+        const isToday = log.ts ? log.ts.startsWith(today) : log.date.includes(new Date().toLocaleDateString());
+        if (isToday) {
+            const pDef = PRIZES.find(p => p.label.replace('\n', ' ') === log.prize);
+            if (pDef) awardedToday[pDef.id]++;
+        }
+    });
+
     tableBody.innerHTML = '';
 
     // Group prizes by ID to show consolidated inventory
@@ -334,18 +381,36 @@ function showAdminDashboard() {
     });
 
     uniquePrizes.forEach(prize => {
-        const awarded = counts[prize.id] || 0;
-        const rem = remaining(prize.id, counts);
-        const limit = isFinite(prize.dailyLimit) ? prize.dailyLimit : '∞';
+        const awarded = awardedToday[prize.id] || 0;
+        const rem = Math.max(0, getPrizeLimit(prize.id) - awarded);
+        const limit = getPrizeLimit(prize.id);
 
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${prize.emoji} ${prize.label.replace('\n', ' ')}</td>
             <td><strong>${awarded}</strong></td>
-            <td>${rem}</td>
-            <td style="color: var(--text-sub)">${limit}</td>
+            <td><span class="stock-badge ${rem <= 0 ? 'out' : 'in'}">${rem}</span></td>
+            <td>
+                <input type="number" class="admin-limit-input" 
+                       value="${limit}" 
+                       data-id="${prize.id}" 
+                       min="0" max="9999">
+            </td>
         `;
         tableBody.appendChild(row);
+    });
+
+    // Add listeners to limit inputs
+    tableBody.querySelectorAll('.admin-limit-input').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const id = e.target.getAttribute('data-id');
+            const val = parseInt(e.target.value) || 0;
+            savePrizeLimit(id, val);
+            // Refresh counts and display
+            const updatedCounts = getDailyCounts();
+            updateCountDisplay(updatedCounts);
+            drawWheel(currentRotation); // Redraw wheel to show/hide "Sold Out"
+        });
     });
 
     // 3. Winners Log Table
@@ -798,11 +863,23 @@ function showAlreadyPlayedBanner(prizeLabel) {
 
     document.getElementById('admin-reset-btn').addEventListener('click', () => {
         if (confirm('⚠️ WARNING: This will reset all prize counts for TODAY to zero. Are you sure?')) {
-            const fresh = {};
-            PRIZES.forEach(p => fresh[p.id] = 0);
-            saveDailyCounts(fresh);
-            updateCountDisplay(fresh);
+            let logs = [];
+            try {
+                logs = JSON.parse(localStorage.getItem(KEY_ALL_LOGS)) || [];
+            } catch (e) { }
+
+            const today = todayStr();
+            const filtered = logs.filter(log => {
+                const isToday = log.ts ? log.ts.startsWith(today) : log.date.includes(new Date().toLocaleDateString());
+                return !isToday;
+            });
+
+            localStorage.setItem(KEY_ALL_LOGS, JSON.stringify(filtered));
+            
+            const freshCounts = getDailyCounts();
+            updateCountDisplay(freshCounts);
             showAdminDashboard(); // refresh table
+            drawWheel(currentRotation);
             alert('Daily counts have been reset.');
         }
     });
@@ -829,12 +906,6 @@ function showAlreadyPlayedBanner(prizeLabel) {
         spinNote.textContent = 'Spinning… 🤞';
 
         spinTo(prizeIndex, () => {
-            // Deduct from daily counts (not for unlimited)
-            if (isFinite(prize.dailyLimit)) {
-                counts[prize.id] = (counts[prize.id] || 0) + 1;
-                saveDailyCounts(counts);
-            }
-
             // Mark user as having spun (permanent)
             const spinRecord = {
                 spun: true,
@@ -848,8 +919,9 @@ function showAlreadyPlayedBanner(prizeLabel) {
             const currentUser = getUser();
             logEntry(currentUser, prize);
 
-            // Update UI
-            updateCountDisplay(counts);
+            // Update UI (re-fetch counts from logs for absolute truth)
+            const updatedCounts = getDailyCounts();
+            updateCountDisplay(updatedCounts);
             spinBtn.querySelector('.spin-btn-text').textContent = 'Already Played!';
             spinNote.textContent = 'You have used your one spin. 🍀';
             showAlreadyPlayedBanner(prize.label);

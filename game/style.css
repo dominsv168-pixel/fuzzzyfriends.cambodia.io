@@ -772,3 +772,44 @@ body {
     color: var(--yellow);
     font-weight: 700;
 }
+
+/* ── Editable Limits & Badges ───────────────────────── */
+.admin-limit-input {
+    width: 70px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    transition: var(--ease);
+}
+
+.admin-limit-input:focus {
+    outline: none;
+    border-color: var(--pink);
+    background: rgba(255,255,255,0.15);
+    box-shadow: 0 0 0 3px var(--pink-pale);
+}
+
+.stock-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.stock-badge.in {
+    background: rgba(78, 238, 188, 0.15);
+    color: var(--mint);
+    border: 1px solid rgba(78, 238, 188, 0.3);
+}
+
+.stock-badge.out {
+    background: rgba(255, 95, 160, 0.15);
+    color: var(--pink);
+    border: 1px solid rgba(255, 95, 160, 0.3);
+}

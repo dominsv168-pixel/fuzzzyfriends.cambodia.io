@@ -68,7 +68,8 @@ app.post('/api/spin', (req, res) => {
     name: name || 'Unknown', 
     contact: contact || 'Unknown', 
     prize, 
-    date: new Date().toLocaleString() 
+    date: new Date().toLocaleString(),
+    ts: new Date().toISOString()
   };
   logs.push(newLog);
   writeJSON(LOGS_FILE, logs);
