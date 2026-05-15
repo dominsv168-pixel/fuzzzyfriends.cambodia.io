@@ -884,6 +884,17 @@ function showAlreadyPlayedBanner(prizeLabel) {
         }
     });
 
+    document.getElementById('admin-full-reset-btn').addEventListener('click', () => {
+        if (confirm('🚨 CRITICAL WARNING: This will PERMANENTLY DELETE ALL registered users and win logs from this browser. Are you absolutely sure?')) {
+            const keys = [KEY_USER, KEY_SPUN, KEY_DAILY_DATE, KEY_DAILY_COUNT, KEY_ALL_LOGS, KEY_ALL_USERS];
+            keys.forEach(k => localStorage.removeItem(k));
+            
+            // Reload to clear everything
+            alert('System has been fully reset. The page will now reload.');
+            window.location.reload();
+        }
+    });
+
     function handleSpin() {
         if (isSpinning || spinBtn.disabled) return;
 
