@@ -148,8 +148,8 @@ function getUser() {
     let user = null;
     try { user = JSON.parse(localStorage.getItem(KEY_USER)); } catch { }
     if (!user) {
-        const name = sessionStorage.getItem('ff_name');
-        const contact = sessionStorage.getItem('ff_contact');
+        const name = localStorage.getItem('ff_name');
+        const contact = localStorage.getItem('ff_contact');
         if (name && contact) user = { name, contact };
     }
     return user;
@@ -408,7 +408,7 @@ function showAdminLogin() {
     const errorEl = document.getElementById('admin-login-error');
 
     // Pre-fill name if known
-    nameInput.value = sessionStorage.getItem('ff_staff_name') || '';
+    nameInput.value = localStorage.getItem('ff_staff_name') || '';
     passInput.value = '';
     errorEl.style.display = 'none';
 
@@ -723,7 +723,7 @@ function showAlreadyPlayedBanner(prizeLabel) {
     if (footer) {
         footer.addEventListener('click', (e) => {
             if (e.detail === 3) {
-                const savedStaff = sessionStorage.getItem('ff_staff_name');
+                const savedStaff = localStorage.getItem('ff_staff_name');
                 if (savedStaff) {
                     showAdminDashboard();
                 } else {
@@ -785,7 +785,7 @@ function showAlreadyPlayedBanner(prizeLabel) {
         }
 
         if (pass === 'admin') { // Password is now "admin"
-            sessionStorage.setItem('ff_staff_name', name);
+            localStorage.setItem('ff_staff_name', name);
             document.getElementById('admin-staff-name').textContent = `Logged in as: ${name}`;
             hideAdminLogin();
             showAdminDashboard();

@@ -67,9 +67,9 @@ function goToPage2() {
   errorEl.textContent = '';
   userName = name;
 
-  // Save to sessionStorage
-  sessionStorage.setItem('ff_name',    name);
-  sessionStorage.setItem('ff_contact', contact);
+  // Save to localStorage
+  localStorage.setItem('ff_name',    name);
+  localStorage.setItem('ff_contact', contact);
 
   // Robust persistence for game/index.html
   localStorage.setItem('ff_user', JSON.stringify({ name, contact }));
@@ -116,8 +116,8 @@ function saveUserToMasterList(name, contact) {
 
 /** Generate and download an entry ticket for the user. */
 function downloadEntryTicket() {
-  const name = sessionStorage.getItem('ff_name') || 'Valued Guest';
-  const contact = sessionStorage.getItem('ff_contact') || 'N/A';
+  const name = localStorage.getItem('ff_name') || 'Valued Guest';
+  const contact = localStorage.getItem('ff_contact') || 'N/A';
   const date = new Date().toLocaleString();
   
   const ticketCode = 'FF-ENTRY-' + Math.random().toString(36).substring(2, 7).toUpperCase();
@@ -166,7 +166,7 @@ function goToPage1() {
 /* ── Page 2 → Page 3 ── */
 function goToPage3() {
   const nameDisplay = document.getElementById('launch-name-text');
-  const storedName  = sessionStorage.getItem('ff_name') || userName;
+  const storedName  = localStorage.getItem('ff_name') || userName;
   if (nameDisplay && storedName) {
     nameDisplay.textContent = `Good luck, ${storedName}! 🍀`;
   }
@@ -209,7 +209,7 @@ function markFollowed(linkId) {
     followedPlatforms.add(linkId);
 
     // Persist follow progress
-    sessionStorage.setItem('ff_follows', JSON.stringify(Array.from(followedPlatforms)));
+    localStorage.setItem('ff_follows', JSON.stringify(Array.from(followedPlatforms)));
     updateFollowCounter();
   }, 300); // slight delay so the link actually opens first
 }
@@ -281,7 +281,7 @@ function handleAdminLoginSubmit() {
   }
 
   if (pass === 'admin') {
-    sessionStorage.setItem('ff_staff_name', name);
+    localStorage.setItem('ff_staff_name', name);
     hideAdminLogin();
     showAdminDashboard();
   } else {
@@ -291,7 +291,7 @@ function handleAdminLoginSubmit() {
 }
 
 function showAdminDashboard() {
-  const staffName = sessionStorage.getItem('ff_staff_name') || 'Staff';
+  const staffName = localStorage.getItem('ff_staff_name') || 'Staff';
   document.getElementById('admin-staff-name').textContent = `Logged in as: ${staffName}`;
   
   // Stats
@@ -390,8 +390,19 @@ function hasUserAlreadySpun(contact) {
 
 /* ── On Load: Restore session if exists ── */
 document.addEventListener('DOMContentLoaded', () => {
-  const savedName    = sessionStorage.getItem('ff_name');
-  const savedContact = sessionStorage.getItem('ff_contact');
+  let savedName    = localStorage.getItem('ff_name');
+  let savedContact = localStorage.getItem('ff_contact');
+
+  // Fallback to ff_user object if individual strings missing
+  if (!savedName || !savedContact) {
+    try {
+      const user = JSON.parse(localStorage.getItem('ff_user'));
+      if (user) {
+        savedName = user.name;
+        savedContact = user.contact;
+      }
+    } catch (e) {}
+  }
 
   if (savedName && savedContact) {
     document.getElementById('user-name').value    = savedName;
@@ -401,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Restore follow progress
-  const savedFollows = sessionStorage.getItem('ff_follows');
+  const savedFollows = localStorage.getItem('ff_follows');
   if (savedFollows) {
     try {
       const follows = JSON.parse(savedFollows);
