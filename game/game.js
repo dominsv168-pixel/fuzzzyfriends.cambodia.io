@@ -322,6 +322,56 @@ function exportUsersToCSV() {
     document.body.removeChild(link);
 }
 
+function renderInventoryTable(logsArray, tableBody) {
+    const today = todayStr();
+    const awardedToday = {};
+    PRIZES.forEach(p => awardedToday[p.id] = 0);
+    logsArray.forEach(log => {
+        const isToday = log.ts ? log.ts.startsWith(today) : log.date.includes(new Date().toLocaleDateString());
+        if (isToday) {
+            const pDef = PRIZES.find(p => p.label.replace('\n', ' ') === log.prize);
+            if (pDef) awardedToday[pDef.id]++;
+        }
+    });
+
+    tableBody.innerHTML = '';
+    const uniquePrizes = [];
+    PRIZES.forEach(p => {
+        if (!uniquePrizes.find(up => up.id === p.id)) uniquePrizes.push(p);
+    });
+
+    uniquePrizes.forEach(prize => {
+        const awarded = awardedToday[prize.id] || 0;
+        const rem = Math.max(0, getPrizeLimit(prize.id) - awarded);
+        const limit = getPrizeLimit(prize.id);
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${prize.emoji} ${prize.label.replace('\n', ' ')}</td>
+            <td><strong>${awarded}</strong></td>
+            <td><span class="stock-badge ${rem <= 0 ? 'out' : 'in'}">${rem}</span></td>
+            <td>
+                <input type="number" class="admin-limit-input" 
+                       value="${limit}" 
+                       data-id="${prize.id}" 
+                       min="0" max="9999">
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+
+    tableBody.querySelectorAll('.admin-limit-input').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const id = e.target.getAttribute('data-id');
+            const val = parseInt(e.target.value) || 0;
+            savePrizeLimit(id, val);
+            const updatedCounts = getDailyCounts();
+            updateCountDisplay(updatedCounts);
+            drawWheel(currentRotation);
+        });
+    });
+}
+
 /** Show the Admin Dashboard with stats. */
 function showAdminDashboard() {
     const overlay = document.getElementById('admin-overlay');
@@ -355,63 +405,7 @@ function showAdminDashboard() {
     }
 
     // 2. Inventory Table
-    const counts = getDailyCounts();
-    const today = todayStr();
-    
-    // Calculate actual awarded counts from logs (for today)
-    const awardedToday = {};
-    PRIZES.forEach(p => awardedToday[p.id] = 0);
-    logs.forEach(log => {
-        // Match by date and prize label
-        const isToday = log.ts ? log.ts.startsWith(today) : log.date.includes(new Date().toLocaleDateString());
-        if (isToday) {
-            const pDef = PRIZES.find(p => p.label.replace('\n', ' ') === log.prize);
-            if (pDef) awardedToday[pDef.id]++;
-        }
-    });
-
-    tableBody.innerHTML = '';
-
-    // Group prizes by ID to show consolidated inventory
-    const uniquePrizes = [];
-    PRIZES.forEach(p => {
-        if (!uniquePrizes.find(up => up.id === p.id)) {
-            uniquePrizes.push(p);
-        }
-    });
-
-    uniquePrizes.forEach(prize => {
-        const awarded = awardedToday[prize.id] || 0;
-        const rem = Math.max(0, getPrizeLimit(prize.id) - awarded);
-        const limit = getPrizeLimit(prize.id);
-
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${prize.emoji} ${prize.label.replace('\n', ' ')}</td>
-            <td><strong>${awarded}</strong></td>
-            <td><span class="stock-badge ${rem <= 0 ? 'out' : 'in'}">${rem}</span></td>
-            <td>
-                <input type="number" class="admin-limit-input" 
-                       value="${limit}" 
-                       data-id="${prize.id}" 
-                       min="0" max="9999">
-            </td>
-        `;
-        tableBody.appendChild(row);
-    });
-
-    // Add listeners to limit inputs
-    tableBody.querySelectorAll('.admin-limit-input').forEach(input => {
-        input.addEventListener('change', (e) => {
-            const id = e.target.getAttribute('data-id');
-            const val = parseInt(e.target.value) || 0;
-            savePrizeLimit(id, val);
-            // Refresh counts and display
-            const updatedCounts = getDailyCounts();
-            updateCountDisplay(updatedCounts);
-            drawWheel(currentRotation); // Redraw wheel to show/hide "Sold Out"
-        });
-    });
+    renderInventoryTable(logs, tableBody);
 
     // 3. Winners Log Table
     logsBody.innerHTML = '';
@@ -431,6 +425,10 @@ function showAdminDashboard() {
     fetch('/api/admin/data')
         .then(r => r.json())
         .then(data => {
+            // Sync to local storage
+            localStorage.setItem(KEY_ALL_LOGS, JSON.stringify(data.logs));
+            localStorage.setItem(KEY_ALL_USERS, JSON.stringify(data.users));
+
             if (playersEl) playersEl.textContent = data.logs.length;
             if (joinedEl) joinedEl.textContent = data.users.length;
 
@@ -444,6 +442,9 @@ function showAdminDashboard() {
                 });
             }
 
+            // Update Inventory Table
+            renderInventoryTable(data.logs, tableBody);
+
             // Update Logs Table
             logsBody.innerHTML = '';
             [...data.logs].reverse().forEach(log => {
@@ -456,6 +457,9 @@ function showAdminDashboard() {
                 `;
                 logsBody.appendChild(row);
             });
+
+            // Update counts on main UI
+            updateCountDisplay(getDailyCounts());
         }).catch(e => console.warn('Server sync failed.'));
 
     overlay.style.display = 'flex';
