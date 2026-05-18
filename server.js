@@ -7,11 +7,25 @@ const PORT = process.env.PORT || 8080;
 
 // Middleware
 app.use(express.json());
+
+// Security: Block access to backend and sensitive files from public static serving
+app.use((req, res, next) => {
+  const hiddenFiles = ['.env', 'server.js', 'package.json', 'package-lock.json', 'database.sqlite', '.gitignore', 'README.md', 'run.bat'];
+  const lowerPath = req.path.toLowerCase();
+  
+  if (lowerPath.startsWith('/data/') || 
+      lowerPath.startsWith('/node_modules/') || 
+      hiddenFiles.some(f => lowerPath.endsWith(`/${f}`) || lowerPath === `/${f}`)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  next();
+});
+
 app.use(express.static(path.join(__dirname, './')));
 
 // ─── Database Setup ────────────────────────────────
-const DATA_DIR = path.join(__dirname, 'data');
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 const DB_FILE = path.join(DATA_DIR, 'database.sqlite');
 
 const db = new sqlite3.Database(DB_FILE, (err) => {
@@ -169,8 +183,13 @@ const server = app.listen(PORT, () => {
 // Handle common server errors
 server.on('error', (e) => {
   if (e.code === 'EADDRINUSE' || e.code === 'EACCES') {
-    console.error(`❌ Port ${PORT} is busy. Trying another...`);
-    app.listen(0);
+    console.error(`❌ Port ${PORT} is busy.`);
+    if (process.env.NODE_ENV !== 'production' && !process.env.RENDER) {
+      console.log('Trying another port...');
+      app.listen(0);
+    } else {
+      process.exit(1);
+    }
   }
 });
 
