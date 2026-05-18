@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const sqlite3 = require('sqlite3').verbose();
 const app = express();
 const PORT = process.env.PORT || 8080;
 
@@ -8,81 +9,150 @@ const PORT = process.env.PORT || 8080;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, './')));
 
-// ─── Persistence Logic ────────────────────────────────
+// ─── Database Setup ────────────────────────────────
 const DATA_DIR = path.join(__dirname, 'data');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const LOGS_FILE = path.join(DATA_DIR, 'logs.json');
-
-// Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
-if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, '[]');
-if (!fs.existsSync(LOGS_FILE)) fs.writeFileSync(LOGS_FILE, '[]');
+const DB_FILE = path.join(DATA_DIR, 'database.sqlite');
 
-function readJSON(file) {
-  try {
-    if (!fs.existsSync(file)) return [];
-    const content = fs.readFileSync(file, 'utf8');
-    return content ? JSON.parse(content) : [];
-  } catch (e) { 
-    console.error(`❌ Error reading ${file}:`, e.message);
-    return []; 
+const db = new sqlite3.Database(DB_FILE, (err) => {
+  if (err) {
+    console.error('Error opening database', err.message);
+  } else {
+    console.log('Connected to the SQLite database.');
+    db.run(`CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      contact TEXT NOT NULL,
+      date TEXT NOT NULL
+    )`, () => {
+      // Migrate old data if any
+      const USERS_FILE = path.join(DATA_DIR, 'users.json');
+      if (fs.existsSync(USERS_FILE)) {
+        try {
+          const content = fs.readFileSync(USERS_FILE, 'utf8');
+          const users = JSON.parse(content);
+          if (users.length > 0) {
+            db.get(`SELECT COUNT(*) as count FROM users`, (err, row) => {
+              if (row && row.count === 0) {
+                const stmt = db.prepare(`INSERT INTO users (name, contact, date) VALUES (?, ?, ?)`);
+                users.forEach(u => stmt.run(u.name, u.contact, u.date));
+                stmt.finalize();
+                console.log(`Migrated ${users.length} users to SQLite`);
+              }
+            });
+          }
+        } catch(e) {}
+      }
+    });
+
+    db.run(`CREATE TABLE IF NOT EXISTS logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      contact TEXT NOT NULL,
+      prize TEXT NOT NULL,
+      date TEXT NOT NULL,
+      ts TEXT NOT NULL
+    )`, () => {
+      // Migrate old logs if any
+      const LOGS_FILE = path.join(DATA_DIR, 'logs.json');
+      if (fs.existsSync(LOGS_FILE)) {
+        try {
+          const content = fs.readFileSync(LOGS_FILE, 'utf8');
+          const logs = JSON.parse(content);
+          if (logs.length > 0) {
+            db.get(`SELECT COUNT(*) as count FROM logs`, (err, row) => {
+              if (row && row.count === 0) {
+                const stmt = db.prepare(`INSERT INTO logs (name, contact, prize, date, ts) VALUES (?, ?, ?, ?, ?)`);
+                logs.forEach(l => stmt.run(l.name, l.contact, l.prize, l.date, l.ts || new Date().toISOString()));
+                stmt.finalize();
+                console.log(`Migrated ${logs.length} logs to SQLite`);
+              }
+            });
+          }
+        } catch(e) {}
+      }
+    });
   }
+});
+
+// Helpers to wrap db operations in Promises
+function run(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function (err) {
+      if (err) reject(err);
+      else resolve({ id: this.lastID, changes: this.changes });
+    });
+  });
 }
 
-function writeJSON(file, data) {
-  try {
-    const dir = path.dirname(file);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(file, JSON.stringify(data, null, 2));
-  } catch (e) {
-    console.error(`❌ Error writing to ${file}:`, e.message);
-  }
+function all(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
+}
+
+function get(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (err, row) => {
+      if (err) reject(err);
+      else resolve(row);
+    });
+  });
 }
 
 // ─── API Endpoints ────────────────────────────────────
 
 // Save new registration
-app.post('/api/register', (req, res) => {
+app.post('/api/register', async (req, res) => {
   const { name, contact } = req.body;
   if (!name || !contact) return res.status(400).json({ error: 'Missing data' });
 
-  const users = readJSON(USERS_FILE);
-  const exists = users.find(u => u.name === name && u.contact === contact);
-  
-  if (!exists) {
-    const newUser = { name, contact, date: new Date().toLocaleString() };
-    users.push(newUser);
-    writeJSON(USERS_FILE, users);
-    console.log(`👤 New User Registered: ${name}`);
+  try {
+    const exists = await get(`SELECT * FROM users WHERE name = ? AND contact = ?`, [name, contact]);
+    if (!exists) {
+      const date = new Date().toLocaleString();
+      await run(`INSERT INTO users (name, contact, date) VALUES (?, ?, ?)`, [name, contact, date]);
+      console.log(`👤 New User Registered: ${name}`);
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
   }
-  res.json({ success: true });
 });
 
 // Save new spin result
-app.post('/api/spin', (req, res) => {
+app.post('/api/spin', async (req, res) => {
   const { name, contact, prize } = req.body;
   if (!prize) return res.status(400).json({ error: 'Missing data' });
 
-  const logs = readJSON(LOGS_FILE);
-  const newLog = { 
-    name: name || 'Unknown', 
-    contact: contact || 'Unknown', 
-    prize, 
-    date: new Date().toLocaleString(),
-    ts: new Date().toISOString()
-  };
-  logs.push(newLog);
-  writeJSON(LOGS_FILE, logs);
-  console.log(`🎡 New Spin: ${prize} by ${name}`);
-  res.json({ success: true });
+  try {
+    const n = name || 'Unknown';
+    const c = contact || 'Unknown';
+    const date = new Date().toLocaleString();
+    const ts = new Date().toISOString();
+    await run(`INSERT INTO logs (name, contact, prize, date, ts) VALUES (?, ?, ?, ?, ?)`, [n, c, prize, date, ts]);
+    console.log(`🎡 New Spin: ${prize} by ${n}`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 // Get all data (for Admin Dashboard)
-app.get('/api/admin/data', (req, res) => {
-  res.json({
-    users: readJSON(USERS_FILE),
-    logs: readJSON(LOGS_FILE)
-  });
+app.get('/api/admin/data', async (req, res) => {
+  try {
+    const users = await all(`SELECT * FROM users`);
+    const logs = await all(`SELECT * FROM logs`);
+    res.json({ users, logs });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 // Routes for pages
@@ -102,4 +172,11 @@ server.on('error', (e) => {
     console.error(`❌ Port ${PORT} is busy. Trying another...`);
     app.listen(0);
   }
+});
+
+process.on('SIGINT', () => {
+  db.close(() => {
+    console.log('Database connection closed.');
+    process.exit(0);
+  });
 });
