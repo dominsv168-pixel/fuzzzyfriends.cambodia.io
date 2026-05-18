@@ -21,7 +21,7 @@ const PRIZES = [
         emoji: '🎫',
         color: '#FF6B9D',        // pink
         dailyLimit: 300,
-        weight: 100,
+        weight: 500, // Very high weight to ensure it's won the most
         claimMsg: 'Show this screen to our staff at the booth to claim your Voucher $1! 🎉',
     },
     {
