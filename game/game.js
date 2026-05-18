@@ -20,7 +20,7 @@ const PRIZES = [
         label: 'Voucher $1',
         emoji: '🎫',
         color: '#FF6B9D',        // pink
-        dailyLimit: 1000,
+        dailyLimit: 300,
         weight: 100,
         claimMsg: 'Show this screen to our staff at the booth to claim your Voucher $1! 🎉',
     },
@@ -147,8 +147,8 @@ function pickPrize(counts) {
         }
     });
     if (!pool.length) {
-        // If everything is sold out, we can't spin. 
-        return null; 
+        // Fallback to Voucher $1 if everything is sold out
+        return PRIZES.find(p => p.id === 'voucher');
     }
     return pool[Math.floor(Math.random() * pool.length)];
 }
